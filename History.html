@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>거래 내역</title>
+</head>
+<body>
+    <h1>내 거래 내역</h1>
+
+    <div>
+        <label>계좌번호 : </label>
+        <input type="number" id="SearchAccount" placeholder="계좌번호를 입력해주세요." />
+        <button type="button" id="SearchBtn"> 조회하기</button>
+    </div>
+
+    <table border="1" id="HistoryTable" style="display:none; width:100%; margin-top:20px;">
+        <thead>
+            <tr>
+                <th>거래일시</th>
+                <th>거래유형</th>
+                <th>거래상대</th>
+                <th>거래금액</th>
+                <th>잔액</th>
+            </tr>
+        </thead>
+        <tbody id="HistoryBody">
+        </tbody>
+    </table>
+    <p id="NoData" style="display: none;">거래 내역이 없습니다.</p>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBclYv7VyLrrZkGKVHV6Vcz1YvBuMr9g7k",
+            authDomain: "easylogin-af3e3.firebaseapp.com",
+            projectId: "easylogin-af3e3",
+            storageBucket: "easylogin-af3e3.firebasestorage.app",
+            messagingSenderId: "100919177628",
+            appId: "1:100919177628:web:ccd562d2baf27eec9c1859"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore(app);
+        
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            }
+        });
+
+        document.getElementById('SearchBtn').addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) { alert("로그인이 필요합니다."); return; }
+
+            const accNum = document.getElementById('SearchAccount').value;
+            if (!accNum) { alert("계좌번호를 입력해주세요."); return; }
+
+            try {
+                // 본인 uid + 계좌번호로 조회 (다른 사람 계좌 조회 방지)
+                const q = query(
+                    collection(db, "TransactionHistory"),
+                    where("uid", "==", user.uid),
+                    where("계좌번호", "==", accNum)
+                );
+
+                const snapshot = await getDocs(q);
+
+                const tbody = document.getElementById('HistoryBody');
+                const table = document.getElementById('HistoryTable');
+                const noData = document.getElementById('NoData');
+
+                tbody.innerHTML = ""; // tbody 초기화 코드
+
+
+                if (snapshot.empty) {
+                    table.style.display = "none";
+                    noData.style.display = "block";
+                    return;
+                }
+
+                // 거래일시 기준 정렬 (최신순)
+                const docs = snapshot.docs.map(doc => doc.data());
+                docs.sort((a, b) => b.거래일시.localeCompare(a.거래일시));
+
+                docs.forEach(data => {
+                    const row = document.createElement('tr');
+                    const isPlus = data.거래금액 > 0;
+
+                    row.innerHTML = `
+                        <td>${data.거래일시}</td>
+                        <td>${data.거래유형}</td>
+                        <td>${data.거래상대 || "-"}</td>
+                        <td style="color:${isPlus ? 'blue' : 'red'}">
+                            ${isPlus ? '+' : ''}${data.거래금액.toLocaleString()}원
+                        </td>
+                        <td>${data.잔액.toLocaleString()}원</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                table.style.display = "table"; // 표를 화면에 보이게 함
+                noData.style.display = "none"; // '데이터 없음' 메시지를 숨김
+
+            } catch (error) {
+                console.error("조회 실패:", error);
+                alert("조회 중 오류 발생");
+            }
+        });
+    </script>
+</body>
+</html>
