@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입/로그인</title>
+</head>
+<body>
+    <form>
+        <h1>회원가입</h1>
+        <div> 이름 : <input type="name" id="signName" /> </div>
+        <div> 나이 : <input type="age" id="Userage" /> </div>
+        <div> 성별 : <input type="gender" id="signUpgender" /> </div>
+        <div> 이메일 : <input type="email" id="signUpEmail" /> </div>
+        <div> 비밀번호 : <input type="password" id="signUpPassword" /> </div>
+        <button type="submit" id="signUpbutton" >회원가입 하기</button>
+    </form>
+
+    <form>
+        <h1>로그인</h1>
+        <div> 이메일 : <input type="eamil" id="signInEmail" /> </div>
+        <div> 비밀번호 : <input type="password" id="signInPassword" /> </div>
+        <button type="submit" id="signInbutton" >로그인 하기</button>
+    </form>
+
+    <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { getFirestore, updateDoc, collection, doc, setDoc, addDoc, where } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+        apiKey: "AIzaSyBclYv7VyLrrZkGKVHV6Vcz1YvBuMr9g7k",
+        authDomain: "easylogin-af3e3.firebaseapp.com",
+        projectId: "easylogin-af3e3",
+        storageBucket: "easylogin-af3e3.firebasestorage.app",
+        messagingSenderId: "100919177628",
+        appId: "1:100919177628:web:ccd562d2baf27eec9c1859",
+        measurementId: "G-E91YWFGLCG"
+    };
+
+    const API = 'http://localhost:3000/api/user';
+    
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app); 
+    const auth = getAuth();
+
+
+    // 회원가입
+    document.getElementById('signUpbutton').addEventListener('click', async (event) => {
+        event.preventDefault()
+        
+        const name = document.getElementById('signName').value;
+        const age = document.getElementById('Userage').value;
+        const gender = document.getElementById('signUpgender').value;
+        const signUpEmail = document.getElementById('signUpEmail').value;
+        const signUpPassword = document.getElementById('signUpPassword').value;
+
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, signUpEmail, signUpPassword);
+            const user = userCredential.user;
+
+            const res = await fetch(`${API}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    uid: user.uid,
+                    name: name,
+                    age: age,
+                    gender: gender
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {alert(data.error); return; }
+
+            alert(`회원가입 완료!`);
+            } catch (error) {
+                console.error("오류 발생:", error);
+                alert("생성 실패")
+            };
+    });
+
+        
+    // 로그인
+    document.getElementById('signInbutton').addEventListener('click', async (event) => {
+        event.preventDefault()
+
+        const signInEmail = document.getElementById('signInEmail').value;
+        const signInPassword = document.getElementById('signInPassword').value;
+        
+        if (!signInEmail || !signInPassword) { alert("이메일과 비밀번호를 입력해주세요."); return; }
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, signInEmail, signInPassword);
+            const user = userCredential.user;
+
+            await fetch(`${API}/login`, {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: user.uid })
+            });
+
+            window.location.hrff = "main.html";
+        } catch (error) {
+            console.error("오류 발생:", error);
+            alert("로그인 실패: " + error.message);
+        }
+    });
+     // 날짜 가져와서 포맷하는 함수
+    function formatDateTime(date = new Date()) {
+    const year  = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day   = String(date.getDate()).padStart(2, '0');
+    const hour  = String(date.getHours()).padStart(2, '0');
+    const min   = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}년 ${month}월 ${day}일 ${hour}시 ${min}분`;
+    } 
+    </script>
+</body>
+</html>
