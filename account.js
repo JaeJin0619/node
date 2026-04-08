@@ -18,16 +18,16 @@ router.post('/create', async (req, res) => {
     const { uid, password } = req.body;
 
     if (!uid || !password) {
-        return res.status(400), json({ error: "잘못된 요청입니다." });
+        return res.status(400).json({ error: "잘못된 요청입니다." });
     }
 
     if (password.length !== 6) {
-        return res.status(400).json
+        return res.status(400).json({ error: "비밀번호는 6자리여야 합니니다." });
     }
 
     try {
         const userSnap = await db.collection('user').doc(uid).get();
-        const nickName = userSnap.exists ? userSnap().name || "이름 없음" : "이름 없음";
+        const nickName = userSnap.exists ? userSnap.data().name || "이름 없음" : "이름 없음";
 
         const randomNumber = Math.floor(Math.random() * 10000000000000).toString().padStart(13, '0');
 
@@ -50,10 +50,13 @@ router.post('/create', async (req, res) => {
 
 // 입금 API
 router.post('/deposit', async (req, res) => {
-    const { uid, accountNumber, amount } = req.body;
+    let { uid, accountNumber, amount } = req.body;
+    accountNumber = String(accountNumber);
+    amount = Number(amount);
+
 
     if (!uid || !accountNumber || !amount || amount <= 0) {
-        return res.status(400).json({ error: "잘못된 요청입니다."});
+        return res.status(400).json({ error: "잘못된 요청입니다." });
     }
 
     try {
@@ -65,14 +68,9 @@ router.post('/deposit', async (req, res) => {
 
         const accountDoc = q.docs[0];
         const accountData = accountDoc.data();
+        const newBalance = accountData.잔액 + amount;
 
-        if (accountData.잔액 < amount) {
-            return res.status(400).json({ error: `잔액 부족 | 현재잔액: ${accountData.잔액.toLocaleString()}원` });
-        }
-
-        const newBalance = accountData.잔액 - amount;
-
-        await accountDoc.ref.update({ 잔액: FieldValue.increment(-amount) });
+        await accountDoc.ref.update({ 잔액: FieldValue.increment(amount) });
 
         await db.collection('TransactionHistory').add({
             uid,
@@ -92,8 +90,11 @@ router.post('/deposit', async (req, res) => {
 })
 
 // 출금 API
-router.post('withdraw', async (req, res) => {
-    const { uid, accountNumber, amount } = req.body;
+router.post('/withdraw', async (req, res) => {
+    let { uid, accountNumber, amount } = req.body;
+
+    accountNumber = String(accountNumber);
+    amount = Number(amount);
 
     if (!uid || !accountNumber || !amount || amount <= 0) {
         return res.status(400).json({ error: "잘못된 요청입니다." });
@@ -118,7 +119,7 @@ router.post('withdraw', async (req, res) => {
         await accountDoc.ref.update({ 잔액: FieldValue.increment(-amount) });
 
         await db.collection('TransactionHistory').add({
-            uid: user.uid,
+            uid,
             회원계좌명: accountData.회원계좌명,
             계좌번호: accountNumber,
             거래금액: -amount,
