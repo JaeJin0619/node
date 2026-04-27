@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>의뢰서 수정</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px;}
+        h1 { margin-bottom: 20px; }
+        .field { margin-bottom: 14px; }
+        label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+        input[type=text], input[type=date], input[type=time], select, textarea {
+            width: 100%; padding: 8px 10px; border: 1px solid #ccc;
+            border-radius: 5px; font-size: 14px; box-sizing: border-box;
+        }
+        textarea { height: 80px; resize: vertical; }
+        .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-save {
+            flex: 1; padding: 12px; background-color: #4A90D9; color: white;
+            border: none; border-radius: 5px; font-size: 15px; cursor: pointer;
+        }
+        .btn-save:hover { background-color: #357ABD; }
+        .btn-back {
+            flex: 1; padding: 12px; background-color: #eee; color: #333;
+            border: none; border-radius: 5px; font-size: 15px; cursor: pointer;
+        }
+        .btn-back:hover { background-color: #ddd; }
+        #loading { text-align: center; padding: 40px; color: #888; }
+        #error { color: red; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+    <h1>의뢰서 수정</h1>
+    <div id="loading">불러오는 중...</div>
+    <div id="error" style="display:none;"></div>
+    <div id="formWrap" style="display:none;"> 
+        <div class="field">
+            <label>고객명</label>
+            <input type="text" id="clientName" placeholder="고객명" />
+        </div>
+        <div class="field">
+            <label>전화번호 *</label>
+            <input type="text" id="customer_phone" placeholder="010-0000-0000" />
+        </div>
+        <div class="field">
+            <label>주소 *</label>
+            <input type="text" id="customer_address" placeholder="주소" />
+        </div>
+        <div class="field">
+            <label>상세주소</label>
+            <input type="text" id="customer_address_detail" placeholder="상세주소" />
+        </div>
+        <div class="field">
+            <label>브랜드 *</label>
+            <select id="brand">
+                <option value="">선택하세요</option>
+                <option value="삼성">삼성</option>
+                <option value="LG">LG</option>
+                <option value="캐리어">캐리어</option>
+                <option value="센추리">센추리</option>
+                <option value="기타">기타</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>에어컨 유형 *</label>
+            <select id="aircon_type">
+                <option value="">선택하세요</option>
+                <option value="스탠드형">스탠드형</option>
+                <option value="벽걸이형">벽걸이형</option>
+                <option value="천장형">천장형</option>
+                <option value="항온항습기">항온항습기</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>서비스 유형 *</label>
+            <select id="service_type">
+                <option value="">선택하세요</option>
+                <option value="수리">수리</option>
+                <option value="설치">설치</option>
+                <option value="세척">세척</option>
+                <option value="이전설치">이전설치</option>
+                <option value="냉매충전">냉매충전</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>희망 날짜 *</label>
+            <input type="date" id="service_date" />
+        </div>
+        <div class="field">
+            <label>희망 시간</label>
+            <input type="time" id="service_time" />
+        </div>
+        <div class="field">
+            <label>추가 정보</label>
+            <textarea id="detailInfo" placeholder="추가 상세 정보를 입력하세요"></textarea>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-back" onclick="window.location.href='request-list.html'">← 목록으로</button>
+            <button class="btn-save" id="saveBtn">수정 완료</button>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:3000/api/request';
+
+        // url에서 id 추출
+        const params = new URLSearchParams(window.location.search);
+        const requestId = params.get('id');
+
+        if (!requestId) {
+            document.getElementById('loading').style.display = 'none';
+            const errEl = document.getElementById('error');
+            errEl.style.display = 'block';
+            errEl.textContent = '의뢰서 ID가 없습니다. 목록에서 다시 선택해주세요.';
+        } else {
+            loadDetail(requestId);
+        }
+
+        async function loadDetail(id) {
+            try {
+                const res = await fetch(`${API}/detail/${id}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '조회 실패');
+
+                const r = data.request;
+                document.getElementById('clientName').value = r.clientName || '';
+                document.getElementById('customer_phone').value = r.customer_phone || '';
+                document.getElementById('customer_address').value = r.customer_address || '';
+                document.getElementById('customer_address_detail').value = r.customer_address_detail || '';
+                document.getElementById('brand').value = r.brand || '';
+                document.getElementById('aircon_type').value = r.aircon_type || '';
+                document.getElementById('service_type').value = r.service_type || '';
+                document.getElementById('service_date').value = r.service_date || '';
+                document.getElementById('service_time').value = r.service_time || '';
+                document.getElementById('detailInfo').value = r.detailInfo || '';
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('formWrap').style.display = 'block';
+            } catch (err) {
+                document.getElementById('loading').style.display = 'none';
+                const errEl = document.getElementById('error');
+                errEl.style.display = 'block';
+                errEl.textContent = '오류: ' + err.message;
+            }
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            const customer_phone = document.getElementById('customer_phone').value;
+            const customer_address = document.getElementById('customer_address').value;
+            const brand = document.getElementById('brand').value;
+            const aircon_type = document.getElementById('aircon_type').value;
+            const service_type = document.getElementById('service_type').value;
+            const service_date = document.getElementById('service_date').value;
+
+            if (!customer_phone) { alert("전화번호를 입력해주세요"); return; }
+            if (!customer_address) { alert("주소를 입력해주세요."); return; }
+            if (!brand) { alert("에어컨 브랜드를 선택해주세요."); return; }
+            if (!aircon_type) { alert("에어컨 유형을 선택해주세요."); return; }
+            if (!service_type) { alert("서비스 유형을 선택해주세요."); return; }
+            if (!service_date) { alert("서비스 희망 날짜를 입력해주세요."); return; }
+
+            try {
+                const res = await fetch(`${API}/update/${requestId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clientName: document.getElementById('clientName').value,
+                        customer_phone,
+                        customer_address,
+                        customer_address_detail: document.getElementById('customer_address_detail').value,
+                        brand,
+                        aircon_type,
+                        service_type,
+                        service_date,
+                        service_time: document.getElementById('service_time').value,
+                        detailInfo: document.getElementById('detailInfo').value,
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) { alert(data.error); return; }
+
+                alert('의뢰서가 수정되었습니다!');
+                window.location.href = 'request-list.html';
+            } catch (err) {
+                console.error(err);
+                alert('서버가 실행 중인지 확인해주세요.')
+            }
+        });
+    </script>
+</body>
+</html>

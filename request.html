@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="widh=device-width, initial-scale=1.0">
+    <title>의뢰서 등록</title>
+</head>
+<body>
+    <h1>에어컨 서비스 의뢰서 등록</h1>
+
+    <form>
+        <h3>고객 정보</h3>
+        <div>고객명 : <input type="text" id="clientName" placeholder="고객명" /></div>
+        <div>전화번호 * : <input type="text" id="customer_phone" placeholder="010-0000-0000" /></div>
+        <div>주소 * : <input type="text" id="customer_address" placeholder="주소" /></div>
+        <div>상세주소 : <input type="text" id="customer_address_detail" placeholder="상세주소" /></div>
+
+        <h3>에어컨 정보</h3>
+        <div>
+            브랜드 * :
+            <select id="brand">
+                <option value="">선택하세요</option>
+                <option value="삼성">삼성</option>
+                <option value="LG">LG</option>
+                <option value="캐리어">캐리어</option>
+                <option value="센추리">센추리</option>
+                <option value="기타">기타</option>
+            </select>
+        </div>
+        <div>
+            에어컨 유형 * :
+            <select id="aircon_type">
+            <option value="">선택하세요</option>
+            <option value="스탠드형">스탠드형</option>
+            <option value="벽걸이형">벽걸이형</option>
+            <option value="천장형">천장형</option>
+            <option value="항온항습기">항온항습기</option>
+            </select>
+        </div>
+
+        <h3>서비스 정보</h3>
+        <div>
+            서비스 유형 * :
+            <select id="service_type">
+                <option value="">선택하세요</option>
+                <option value="수리">수리</option>
+                <option value="설치">설치</option>
+                <option value="세척">세척</option>
+                <option value="이전설치">이전설치</option>
+                <option value="냉매충전">냉매충전</option>
+            </select>
+        </div>
+        <div>희망 날짜 * : <input type="date" id="service_date" /></div>
+        <div>희망 시간 : <input type="time" id="service_time" /></div>
+        <div>추가 정보 : <textarea id="detailInfo" placeholder="추가 상세 정보를 입려갛세요"></textarea></div>
+
+        <br/>
+        <button type="button" id="submitBtn">의뢰서 등록하기</button>
+    </form>
+
+<script>
+        const API = 'http://localhost:3000/api/request';
+
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const uid = localStorage.getItem('uid');
+            if (!uid) { alert('로그인이 필요합니다.'); window.location.href = 'login.html'; return; }
+
+            const clientName = document.getElementById('clientName').value;
+            const customer_phone = document.getElementById('customer_phone').value;
+            const customer_address = document.getElementById('customer_address').value;
+            const customer_address_detail = document.getElementById('customer_address_detail').value;
+            const brand = document.getElementById('brand').value;
+            const aircon_type = document.getElementById('aircon_type').value;
+            const service_type = document.getElementById('service_type').value;
+            const service_date = document.getElementById('service_date').value;
+            const service_time = document.getElementById('service_time').value;
+            const detailInfo = document.getElementById('detailInfo').value;
+
+            if (!customer_phone) { alert("전화번호를 입력해주세요."); return; }
+            if (!customer_address) { alert("주소를 입력해주세요."); return; }
+            if (!brand) { alert("에어컨 브랜드를 선택해주세요."); return; }
+            if (!aircon_type) { alert("에어컨 유형을 선택해주세요."); return; }
+            if (!service_type) { alert("서비스 유형을 선택해주세요."); return; }
+            if (!service_date) { alert("서비스 희망 날짜를 입력해주세요."); return; }
+
+            try {
+                const res = await fetch(`${API}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid,
+                        clientName,
+                        customer_phone,
+                        customer_address,
+                        customer_address_detail,
+                        brand,
+                        aircon_type,
+                        service_type,
+                        service_date,
+                        service_time,
+                        detailInfo
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) { alert(data.error); return; }
+
+                alert(`의뢰서가 등록되었습니다!\n의뢰서 ID: ${data.request_id}`);
+                window.location.href = "main.html";
+                // 폼 초기화
+                document.getElementById('clientName').value = "";
+                document.getElementById('customer_phone').value = "";
+                document.getElementById('customer_address').value = "";
+                document.getElementById('customer_address_detail').value = "";
+                document.getElementById('brand').value = "";
+                document.getElementById('aircon_type').value = "";
+                document.getElementById('service_type').value = "";
+                document.getElementById('service_date').value = "";
+                document.getElementById('service_time').value = "";
+                document.getElementById('detailInfo').value = "";
+            } catch (error) {
+                console.error("오류 발생:", error);
+                alert("서버가 실행중인지 확인해주세요.");
+            }
+        });
+</script>
+</body>
+</html>
